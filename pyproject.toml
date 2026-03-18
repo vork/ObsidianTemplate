@@ -1,0 +1,9 @@
+[project]
+name = "3d-research"
+version = "0.1.0"
+description = "3D Research"
+requires-python = ">=3.13"
+dependencies = [
+    "pillow>=12.1.1",
+    "pymupdf>=1.27.2",
+]
