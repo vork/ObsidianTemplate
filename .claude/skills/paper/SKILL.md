@@ -1,6 +1,6 @@
 ---
 name: paper
-description: "Process academic papers into structured Obsidian notes. Use this skill whenever the user mentions /paper, wants to add a paper to their Obsidian vault, references an arxiv link/ID they want summarized, asks to enrich or update existing paper notes, or wants to extract and organize academic paper information. Triggers on: arxiv links, PDF paper paths, requests to summarize/add/process papers, requests to enrich or batch-update paper notes."
+description: "Process academic papers into structured Obsidian notes. Use this skill whenever the user mentions /paper, wants to add a paper to their Obsidian vault, references an arxiv link/ID they want summarized, asks to enrich or update existing paper notes, wants to find backlinks between papers, or wants to extract and organize academic paper information. Triggers on: arxiv links, PDF paper paths, requests to summarize/add/process papers, requests to enrich or batch-update paper notes, requests to find/add backlinks."
 argument-hint: <path or URL to paper PDF>
 user-invocable: true
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, Agent
@@ -24,6 +24,11 @@ Accepts:
 **Usage:** `/paper --enrich`
 
 Enriches all existing papers in `Papers/` with more detail, missing tags, backlinks, and citations.
+
+### Mode 3: Find Backlinks
+**Usage:** `/paper --backlinks`
+
+Scans all papers in the vault and discovers missing cross-references between them. Adds `[[WikiLink]]` backlinks where papers reference each other but the links are missing.
 
 ---
 
@@ -246,9 +251,47 @@ When mentioning any of these papers in a note, always use `[[WikiLink]]` syntax 
 
 Before writing a new note, re-check the current list of papers using `mcp__obsidian__list_directory` on `Papers/` — new papers may have been added since this skill was written.
 
+## Find Backlinks Workflow (`--backlinks`)
+
+### Step 1: List all papers
+
+Use `mcp__obsidian__list_directory` for `Papers/` and `Papers/GeneralTechniques/` to build a complete list of paper filenames (without `.md` extension). These are the potential backlink targets.
+
+### Step 2: Read each paper and identify missing links
+
+For each paper note, read its content with `mcp__obsidian__read_note`. Then:
+
+1. **Check existing backlinks**: Find all `[[WikiLink]]` references already present
+2. **Search for unlinked mentions**: Look for paper names mentioned in plain text that should be `[[WikiLinked]]`. Check for:
+   - Exact paper name matches (e.g., "DreamFusion" without `[[]]`)
+   - Common variations (e.g., "TRELLIS 2" for `[[TRELLIS2]]`, "Zero-1-to-3" for `[[Zero1to3]]`)
+   - Method names referenced in the Idea section that correspond to vault papers
+3. **Identify thematic connections**: Papers that clearly relate to each other but lack cross-references:
+   - Papers using the same technique (e.g., both use SDS → should link to [[DreamFusion]])
+   - Papers building on the same base method
+   - Papers compared against each other in their respective results sections
+
+### Step 3: Add missing backlinks
+
+For each paper with missing links, use `mcp__obsidian__patch_note` to:
+- Replace plain-text paper name mentions with `[[WikiLink]]` syntax
+- Add "Related: [[Paper]]" lines in the Idea section where a thematic connection exists but the paper wasn't explicitly mentioned
+
+**Rules:**
+- Only add backlinks where there's a genuine relationship (shared method, comparison, building-on)
+- Don't add spurious links just because two papers exist in the same domain
+- Prefer `patch_note` over `write_note` to minimize changes
+- Process papers in batches using background agents for speed
+
+### Step 4: Report
+
+Summarize all backlinks added, grouped by paper.
+
+---
+
 ## Cleanup
 
-After processing, clean up temp files:
+Cleanup of `/tmp/paper_*` directories is ALWAYS allowed and should be done automatically at the end of every workflow. These are temporary extraction artifacts with no user data. Use:
 ```bash
-rm -rf /tmp/paper_extract
+rm -rf /tmp/paper_extract /tmp/paper_*
 ```
