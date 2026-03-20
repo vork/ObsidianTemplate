@@ -7,3 +7,11 @@ dependencies = [
     "pillow>=12.1.1",
     "pymupdf>=1.27.2",
 ]
+
+[project.optional-dependencies]
+nougat = [
+    "torch>=2.0",
+    "transformers>=4.35",
+    "python-Levenshtein>=0.21",
+    "nltk>=3.8",
+]

@@ -46,12 +46,20 @@ If it's a local PDF path, use it directly.
 
 ### Step 2: Extract text and figures
 
-Run the extraction script bundled with this skill. Dependencies (`PyMuPDF`, `Pillow`) are declared in the workspace-root `pyproject.toml` and managed by `uv`.
+Run the extraction script bundled with this skill. Dependencies are declared in the workspace-root `pyproject.toml` and managed by `uv`. The `nougat` optional extra enables Nougat (neural PDF→markdown with LaTeX equations); without it, plain-text extraction via PyMuPDF is used as fallback.
 
-Resolve `SKILL_DIR` to the folder containing this `SKILL.md` file, then run:
+**IMPORTANT:** `uv run` cannot handle spaces in absolute script paths (the Google Drive path contains `My Drive`). Always `cd` into the project root first and use the relative path:
+
 ```bash
-uv run "$SKILL_DIR/extract.py" "<pdf_path>" /tmp/paper_extract/images
+cd "<project_root>" && uv run --extra nougat .claude/skills/paper/extract.py "<pdf_path>" /tmp/paper_extract/images
 ```
+
+To skip Nougat (faster, but no equation support):
+```bash
+cd "<project_root>" && uv run .claude/skills/paper/extract.py "<pdf_path>" /tmp/paper_extract/images --no-nougat
+```
+
+Where `<project_root>` is the working directory (the vault root containing `pyproject.toml`).
 
 This produces:
 - `/tmp/paper_extract/extracted_text.txt` — full text by page
